@@ -39,65 +39,124 @@
         "vulnerable": {
           "type": "object",
           "properties": {
-            "type": "boolean",
-            "description": "Whether a vulnerability was detected"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["boolean"]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         },
         "reason": {
           "type": "object",
           "properties": {
-            "type": "string",
-            "description": "Short reason for the determination"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["string"]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         },
         "evidence": {
           "type": "object",
           "properties": {
-            "type": "array",
-            "description": "List of evidence objects",
+            "type": {
+              "type": "string",
+              "enum": ["array"]
+            },
+            "description": {
+              "type": "string"
+            },
             "items": {
               "type": "object",
-              "required": ["line_start", "line_end", "snippet"],
               "properties": {
-                "line_start": {"type": "integer"},
-                "line_end": {"type": "integer"},
-                "snippet": {"type": "string"},
-                "source": {"type": "string"},
-                "sink": {"type": "string"}
+                "type": {
+                  "type": "string",
+                  "enum": ["object"]
+                },
+                "required": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "properties": {
+                  "type": "object"
+                }
               }
             }
-          }
+          },
+          "required": ["type"]
         },
         "confidence": {
           "type": "object",
           "properties": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "description": "Confidence level (0-1)"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["number"]
+            },
+            "minimum": {
+              "type": "number"
+            },
+            "maximum": {
+              "type": "number"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         },
         "type": {
           "type": "object",
           "properties": {
-            "type": "string",
-            "description": "Vulnerability type classification"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["string"]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         },
         "sanitization_absent": {
           "type": "object",
           "properties": {
-            "type": "boolean",
-            "description": "Whether sanitization is absent"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["boolean"]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         },
         "proposed_payloads": {
           "type": "object",
           "properties": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Potential exploit payloads (short list)"
-          }
+            "type": {
+              "type": "string",
+              "enum": ["array"]
+            },
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["string"]
+                }
+              }
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["type"]
         }
       }
     },
