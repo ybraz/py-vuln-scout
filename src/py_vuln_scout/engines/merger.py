@@ -14,17 +14,18 @@ def merge_findings(
     """Merge findings from regex and LLM engines with validation logic.
 
     Rules:
-    1. If regex and llm agree (same or correlated snippet) → finding appears with engine: "merged"
+    1. If regex and llm agree (same fingerprint) → finding appears with engine: "merged"
     2. If only one engine detects, but validator confirms → finding also appears
-    3. If only one engine detects and validator is "rejected" or "skipped" → does not appear
-    4. If validator is disabled and there's no agreement → nothing is returned
-    5. validator_status and engine must clearly reflect final status: "merged", "confirmed", "rejected", "skipped"
+    3. If validator explicitly rejects → finding is discarded
+    4. If validator is disabled → high confidence findings (>=0.7) are kept
+    5. If validator ran but skipped → finding is discarded
+    6. validator_status and engine must clearly reflect final status: "merged", "confirmed", "rejected", "skipped"
 
     Args:
         regex_results: Findings from regex engine
         llm_results: Findings from LLM engine
-        validator_results: Findings after validation (optional)
-        merged_only: If True, only return merged/confirmed findings (default: True)
+        validator_results: Findings after validation (optional, None means validator didn't run)
+        merged_only: If True, only return merged/confirmed/high-confidence findings (default: True)
 
     Returns:
         List of merged findings according to the rules
@@ -69,13 +70,19 @@ def merge_findings(
                 # Validator confirmed this finding
                 validated.merge_reason = "validator_confirmed"
                 merged_findings.append(validated)
-            elif validated.validator_status in [ValidatorStatus.REJECTED, ValidatorStatus.SKIPPED]:
-                # Discard: validator rejected or was skipped
-                # merge_reason would be "validator_skipped_discarded" but we don't add it
+            elif validated.validator_status == ValidatorStatus.REJECTED:
+                # Discard: validator explicitly rejected
                 pass
+            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is not None:
+                # Validator ran but skipped this finding - discard
+                pass
+            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is None:
+                # Validator didn't run at all - keep high confidence findings
+                # This allows single-engine findings when validator is disabled
+                if finding.confidence >= 0.7:  # High confidence threshold
+                    merged_findings.append(finding)
             elif validated.validator_status == ValidatorStatus.INCONCLUSIVE:
-                # Inconclusive - we could keep it with lower confidence
-                # For now, discard per rule 3
+                # Inconclusive - discard per rule 3
                 pass
 
     # Step 3: Handle LLM-only findings
@@ -91,9 +98,17 @@ def merge_findings(
                 # Validator confirmed this finding
                 validated.merge_reason = "validator_confirmed"
                 merged_findings.append(validated)
-            elif validated.validator_status in [ValidatorStatus.REJECTED, ValidatorStatus.SKIPPED]:
-                # Discard: validator rejected or was skipped
+            elif validated.validator_status == ValidatorStatus.REJECTED:
+                # Discard: validator explicitly rejected
                 pass
+            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is not None:
+                # Validator ran but skipped this finding - discard
+                pass
+            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is None:
+                # Validator didn't run at all - keep high confidence findings
+                # This allows single-engine findings when validator is disabled
+                if finding.confidence >= 0.7:  # High confidence threshold
+                    merged_findings.append(finding)
             elif validated.validator_status == ValidatorStatus.INCONCLUSIVE:
                 # Inconclusive - discard per rule 3
                 pass

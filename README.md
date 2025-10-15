@@ -311,20 +311,24 @@ make pre-commit
 
 By default (`--merged-only`), the tool applies sophisticated merge logic to reduce false positives:
 
-1. **Consensus Mode**: Findings appear only when regex and LLM agree (same fingerprint) → marked as `engine: "merged"` with `merge_reason: "regex_llm_agreement"`
-2. **Validator Confirmation**: Single-engine findings appear only if validator confirms them → `merge_reason: "validator_confirmed"` with `validator_status: "confirmed"`
-3. **Rejection/Skip**: Findings rejected or skipped by validator are discarded
-4. **No Agreement**: Without validator and without consensus, findings are filtered out
+1. **Consensus Mode**: Findings appear when regex and LLM agree (same fingerprint) → marked as `engine: "merged"` with `merge_reason: "regex_llm_agreement"`
+2. **Validator Confirmation**: Single-engine findings appear if validator confirms them → `merge_reason: "validator_confirmed"` with `validator_status: "confirmed"`
+3. **High Confidence**: When validator is disabled (`--no-validate`), findings with confidence ≥ 0.7 are kept
+4. **Rejection**: Findings explicitly rejected by validator are discarded
+5. **Validator Skip**: If validator runs but skips a finding, it's discarded
 
 Use `--no-merged-only` to see all raw findings from each engine (legacy behavior).
 
 **Example:**
 ```bash
-# High-precision mode (default): only merged/confirmed findings
+# High-precision mode (default): merged/confirmed/high-confidence findings
 pvs analyze myapp.py
 
 # See all findings including potential false positives
 pvs analyze myapp.py --no-merged-only
+
+# Without validator, only high-confidence (≥0.7) findings appear
+pvs analyze myapp.py --no-validate
 ```
 
 ## Architecture

@@ -141,18 +141,35 @@ def test_merge_regex_only_validator_rejected(sample_regex_finding):
 
 
 def test_merge_regex_only_validator_skipped(sample_regex_finding):
-    """Test regex-only finding with validator skipped (should be discarded)."""
-    # Validator skipped
+    """Test regex-only finding with validator not run (high confidence kept)."""
+    # Validator didn't run (validator_results=None)
     sample_regex_finding.validator_status = ValidatorStatus.SKIPPED
 
     result = merge_findings(
         regex_results=[sample_regex_finding],
         llm_results=[],
-        validator_results=None,
+        validator_results=None,  # Validator didn't run
         merged_only=True,
     )
 
-    # Should be discarded (no agreement, no validator confirmation)
+    # Should be kept because confidence >= 0.7 and validator didn't run
+    assert len(result) == 1
+    assert result[0].confidence == 0.7
+
+
+def test_merge_regex_only_validator_ran_but_skipped(sample_regex_finding):
+    """Test regex-only finding where validator ran but skipped (should be discarded)."""
+    # Validator ran but skipped this finding
+    sample_regex_finding.validator_status = ValidatorStatus.SKIPPED
+
+    result = merge_findings(
+        regex_results=[sample_regex_finding],
+        llm_results=[],
+        validator_results=[sample_regex_finding],  # Validator ran
+        merged_only=True,
+    )
+
+    # Should be discarded because validator ran but skipped
     assert len(result) == 0
 
 
