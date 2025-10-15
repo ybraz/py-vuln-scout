@@ -25,7 +25,7 @@ A modular Static Application Security Testing (SAST) tool for Python that combin
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/py-vuln-scout.git
+git clone https://github.com/ybraz/py-vuln-scout.git
 cd py-vuln-scout
 ```
 
@@ -347,7 +347,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- Report issues: [GitHub Issues](https://github.com/yourusername/py-vuln-scout/issues)
+- Report issues: [GitHub Issues](https://github.com/ybraz/py-vuln-scout/issues)
 - Documentation: This README and inline docstrings
 - Examples: See `examples/` directory
 

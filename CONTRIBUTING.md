@@ -15,7 +15,7 @@ Thank you for your interest in contributing to py-vuln-scout! This document prov
 1. **Fork and clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/py-vuln-scout.git
+git clone https://github.com/ybraz/py-vuln-scout.git
 cd py-vuln-scout
 ```
 
