@@ -119,7 +119,10 @@ pvs analyze myapp.py --model "codellama:13b" --rules-dir ./custom_rules
 
 1. **Regex Engine** scans code with pattern matching + AST anchoring
 2. **LLM Engine** performs semantic analysis with context understanding
-3. **Merge Logic** combines findings, adjusting confidence scores
+3. **Merge Logic** combines findings using function-based fingerprints:
+   - Findings in the same function get the same fingerprint
+   - When both engines detect → automatic merge with confidence boost
+   - When only one engine detects → validator decides
 4. **Validator Engine** (on discrepancies) generates PoCs to confirm/reject
 5. **Explainer Engine** adds human-readable risk/impact/fix descriptions
 
