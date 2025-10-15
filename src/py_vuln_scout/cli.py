@@ -11,6 +11,7 @@ from py_vuln_scout import __version__
 from py_vuln_scout.config import Config, ConfigError, load_config, load_rules_for_cwe
 from py_vuln_scout.engines.explainer_engine import ExplainerEngine
 from py_vuln_scout.engines.llm_engine import LLMEngine
+from py_vuln_scout.engines.merger import merge_findings
 from py_vuln_scout.engines.regex_engine import RegexEngine
 from py_vuln_scout.engines.validator_engine import ValidatorEngine
 from py_vuln_scout.llm.ollama_client import OllamaClient
@@ -35,6 +36,9 @@ def analyze(
     ),
     no_validate: bool = typer.Option(False, "--no-validate", help="Skip validator engine"),
     no_explain: bool = typer.Option(False, "--no-explain", help="Skip explainer engine"),
+    merged_only: bool = typer.Option(
+        True, "--merged-only/--no-merged-only", help="Only show merged/confirmed findings (default: true)"
+    ),
     config_path: Optional[str] = typer.Option(
         None, "--config", help="Path to config file"
     ),
@@ -97,22 +101,32 @@ def analyze(
                     llm_findings = llm_engine.analyze(file_path, code)
                 progress.remove_task(task)
 
-            # Merge findings
-            all_findings = _merge_findings(regex_findings, llm_findings)
+            # Collect all findings before validation for validator context
+            all_findings_pre_validation = regex_findings + llm_findings
 
             # Run validator if needed
-            if not no_validate and ollama_client:
+            validated_findings = []
+            if not no_validate and ollama_client and all_findings_pre_validation:
                 validator = ValidatorEngine(ollama_client)
                 if validator.should_validate(regex_findings, llm_findings):
                     task = progress.add_task("Running validator engine...", total=None)
-                    for finding in all_findings:
+                    for finding in all_findings_pre_validation:
                         regex_desc = f"{len(regex_findings)} findings" if regex_findings else "no findings"
                         llm_desc = f"{len(llm_findings)} findings" if llm_findings else "no findings"
                         validator.validate(finding, code, regex_desc, llm_desc)
+                    validated_findings = all_findings_pre_validation
                     progress.remove_task(task)
 
+            # Merge findings with new logic
+            all_findings = merge_findings(
+                regex_findings,
+                llm_findings,
+                validated_findings if validated_findings else None,
+                merged_only=merged_only,
+            )
+
             # Run explainer if needed
-            if not no_explain and ollama_client:
+            if not no_explain and ollama_client and all_findings:
                 task = progress.add_task("Running explainer engine...", total=None)
                 explainer = ExplainerEngine(ollama_client)
                 for finding in all_findings:
@@ -194,76 +208,6 @@ def self_test() -> None:
         raise typer.Exit(1)
 
 
-def _merge_findings(regex_findings: list[Finding], llm_findings: list[Finding]) -> list[Finding]:
-    """Merge findings from regex and LLM engines.
-
-    Args:
-        regex_findings: Findings from regex engine
-        llm_findings: Findings from LLM engine
-
-    Returns:
-        Merged list of findings
-    """
-    if not regex_findings:
-        return llm_findings
-    if not llm_findings:
-        return regex_findings
-
-    # Simple merge: combine both lists
-    # In a more sophisticated version, we'd deduplicate by fingerprint
-    all_findings = []
-
-    # Group by fingerprint
-    fingerprint_map: dict[str, list[Finding]] = {}
-    for finding in regex_findings + llm_findings:
-        fp = finding.metadata.fingerprint or ""
-        if fp not in fingerprint_map:
-            fingerprint_map[fp] = []
-        fingerprint_map[fp].append(finding)
-
-    # Merge findings with same fingerprint
-    for fp, findings in fingerprint_map.items():
-        if len(findings) == 1:
-            all_findings.append(findings[0])
-        else:
-            # Multiple findings with same fingerprint - merge them
-            merged = _merge_duplicate_findings(findings)
-            all_findings.append(merged)
-
-    return all_findings
-
-
-def _merge_duplicate_findings(findings: list[Finding]) -> Finding:
-    """Merge multiple findings for the same location.
-
-    Args:
-        findings: List of findings to merge
-
-    Returns:
-        Merged finding
-    """
-    # Use the finding with highest confidence as base
-    base = max(findings, key=lambda f: f.confidence)
-
-    # Combine evidence
-    all_evidence = []
-    for finding in findings:
-        all_evidence.extend(finding.evidence)
-
-    # Remove duplicate evidence
-    unique_evidence = []
-    seen = set()
-    for ev in all_evidence:
-        key = (ev.line_start, ev.line_end, ev.snippet)
-        if key not in seen:
-            seen.add(key)
-            unique_evidence.append(ev)
-
-    base.evidence = unique_evidence
-    base.engine = Engine.MERGED
-    base.confidence = min(1.0, base.confidence + 0.05)  # Small bonus for agreement
-
-    return base
 
 
 if __name__ == "__main__":

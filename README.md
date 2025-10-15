@@ -32,7 +32,7 @@ cd py-vuln-scout
 ### 2. Create a virtual environment
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
@@ -156,6 +156,7 @@ pvs analyze myapp.py --model "codellama:13b" --rules-dir ./custom_rules
     }
   ],
   "validator_status": "confirmed",
+  "merge_reason": "regex_llm_agreement",
   "poc": {
     "best_payload": "<img src=x onerror=alert(1)>",
     "steps": ["curl 'http://localhost:5000/search?q=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E'"]
@@ -302,8 +303,29 @@ make pre-commit
 - `--only [regex|llm|both]` - Run specific engine(s)
 - `--no-validate` - Skip validator engine
 - `--no-explain` - Skip explainer engine
+- `--merged-only` / `--no-merged-only` - Only show merged/confirmed findings (default: true)
 - `--output <file>` - Write results to file
 - `--config <path>` - Custom config file
+
+### Merge Logic and Finding Filtering
+
+By default (`--merged-only`), the tool applies sophisticated merge logic to reduce false positives:
+
+1. **Consensus Mode**: Findings appear only when regex and LLM agree (same fingerprint) → marked as `engine: "merged"` with `merge_reason: "regex_llm_agreement"`
+2. **Validator Confirmation**: Single-engine findings appear only if validator confirms them → `merge_reason: "validator_confirmed"` with `validator_status: "confirmed"`
+3. **Rejection/Skip**: Findings rejected or skipped by validator are discarded
+4. **No Agreement**: Without validator and without consensus, findings are filtered out
+
+Use `--no-merged-only` to see all raw findings from each engine (legacy behavior).
+
+**Example:**
+```bash
+# High-precision mode (default): only merged/confirmed findings
+pvs analyze myapp.py
+
+# See all findings including potential false positives
+pvs analyze myapp.py --no-merged-only
+```
 
 ## Architecture
 

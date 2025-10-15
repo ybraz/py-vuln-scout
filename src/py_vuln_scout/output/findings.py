@@ -94,6 +94,7 @@ class Finding(BaseModel):
     validator_status: ValidatorStatus = ValidatorStatus.SKIPPED
     poc: PoC | None = None
     explanation: Explanation | None = None
+    merge_reason: str | None = None
     timestamps: Timestamps = Field(default_factory=Timestamps)
     metadata: Metadata = Field(default_factory=Metadata)
 

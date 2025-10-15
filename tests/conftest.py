@@ -31,11 +31,10 @@ def sample_regex_rule():
         "confidence": 0.6,
         "patterns": [
             {
-                "regex": r"render_template_string\s*\([^)]*request\.(args|form)",
+                "regex": r"render_template_string\s*\(['\"].*?['\"]\s*\+\s*",
                 "flags": ["MULTILINE"],
                 "context": {
                     "require_call_names": ["render_template_string"],
-                    "taint_sources": ["request.args"],
                     "taint_sinks": ["render_template_string"],
                 },
             }

@@ -87,11 +87,11 @@
             "type": "string"
           },
           "source": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "Taint source identifier"
           },
           "sink": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "Taint sink identifier"
           }
         }
@@ -103,7 +103,7 @@
       "description": "Validation status from validator engine"
     },
     "poc": {
-      "type": "object",
+      "type": ["object", "null"],
       "description": "Proof-of-concept information (when validated)",
       "properties": {
         "best_payload": {
@@ -122,7 +122,7 @@
       }
     },
     "explanation": {
-      "type": "object",
+      "type": ["object", "null"],
       "description": "Human-readable explanation (when requested)",
       "properties": {
         "risk": {
@@ -141,6 +141,11 @@
         }
       }
     },
+    "merge_reason": {
+      "type": ["string", "null"],
+      "description": "Reason for merge decision",
+      "enum": ["regex_llm_agreement", "validator_confirmed", "validator_skipped_discarded", null]
+    },
     "timestamps": {
       "type": "object",
       "required": ["analyzed_at"],
@@ -156,15 +161,15 @@
       "type": "object",
       "properties": {
         "model_name": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "LLM model used (if applicable)"
         },
         "latency_ms": {
-          "type": "number",
+          "type": ["number", "null"],
           "description": "Analysis latency in milliseconds"
         },
         "fingerprint": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "Stable hash of the code snippet"
         }
       }
