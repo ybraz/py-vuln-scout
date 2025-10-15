@@ -140,8 +140,8 @@ class LLMEngine:
             line_end = min(10, len(code.splitlines()))
             snippet = ast_utils.extract_snippet(code, line_start, line_end)
 
-        # Generate fingerprint
-        fp = fingerprint.generate_fingerprint(file_path, line_start, line_end, snippet)
+        # Generate fingerprint (function-based)
+        fp = fingerprint.generate_fingerprint(file_path, line_start, line_end, snippet, full_code=code)
 
         # Determine severity (default to HIGH for XSS)
         severity = Severity.HIGH if cwe_id == "CWE-79" else Severity.MEDIUM

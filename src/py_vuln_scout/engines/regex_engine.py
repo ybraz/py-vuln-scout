@@ -129,9 +129,9 @@ class RegexEngine:
                     )
                 ]
 
-                # Generate fingerprint
+                # Generate fingerprint (function-based)
                 fp = fingerprint.generate_fingerprint(
-                    file_path, line_start, line_end, snippet
+                    file_path, line_start, line_end, snippet, full_code=code
                 )
 
                 # Create finding

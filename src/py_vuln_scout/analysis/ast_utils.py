@@ -71,6 +71,38 @@ def _get_full_attribute_name(node: ast.Attribute) -> str | None:
     return None
 
 
+def find_enclosing_function(tree: ast.AST, line_number: int) -> str | None:
+    """Find the name of the function that encloses a given line number.
+
+    Args:
+        tree: AST root node
+        line_number: Line number to search for (1-indexed)
+
+    Returns:
+        Function name or None if not inside a function
+    """
+    enclosing_func = None
+
+    class FunctionFinder(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            nonlocal enclosing_func
+            # Check if line_number is within this function's body
+            if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                if node.lineno <= line_number <= (node.end_lineno or node.lineno):
+                    enclosing_func = node.name
+            self.generic_visit(node)
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            nonlocal enclosing_func
+            if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                if node.lineno <= line_number <= (node.end_lineno or node.lineno):
+                    enclosing_func = node.name
+            self.generic_visit(node)
+
+    FunctionFinder().visit(tree)
+    return enclosing_func
+
+
 def extract_snippet(code: str, line_start: int, line_end: int, max_lines: int = 12) -> str:
     """Extract a code snippet from source code.
 
