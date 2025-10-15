@@ -1,0 +1,56 @@
+{
+  "id": "CWE-79.regex.001",
+  "name": "Flask render_template_string XSS",
+  "cwe_id": "CWE-79",
+  "severity": "HIGH",
+  "confidence": 0.6,
+  "description": "Detects potential XSS vulnerabilities in Flask when using render_template_string with unsanitized user input",
+  "references": [
+    "https://cwe.mitre.org/data/definitions/79.html",
+    "https://flask.palletsprojects.com/en/2.3.x/security/#cross-site-scripting-xss"
+  ],
+  "patterns": [
+    {
+      "regex": "render_template_string\\s*\\([^)]*request\\.(args|form|values|cookies|headers|data|json|get_json)",
+      "flags": ["MULTILINE"],
+      "context": {
+        "require_call_names": ["render_template_string"],
+        "ban_sanitizers": ["escape", "Markup.escape"],
+        "taint_sources": ["request.args", "request.form", "request.values", "request.cookies", "request.headers", "request.data", "request.json"],
+        "taint_sinks": ["render_template_string"]
+      }
+    },
+    {
+      "regex": "render_template_string\\s*\\(['\"].*?['\"]\\s*\\+\\s*",
+      "flags": ["MULTILINE"],
+      "context": {
+        "require_call_names": ["render_template_string"],
+        "taint_sinks": ["render_template_string"]
+      }
+    },
+    {
+      "regex": "render_template_string\\s*\\(\\s*f['\"]",
+      "flags": ["MULTILINE"],
+      "context": {
+        "require_call_names": ["render_template_string"],
+        "taint_sinks": ["render_template_string"]
+      }
+    }
+  ],
+  "metadata": {
+    "framework": "Flask",
+    "category": "injection"
+  },
+  "examples": {
+    "positive": [
+      "return render_template_string('<div>' + request.args.get('name') + '</div>')",
+      "template = f'<h1>{request.form.get(\"title\")}</h1>'\nreturn render_template_string(template)",
+      "html = '<p>' + request.values.get('content') + '</p>'\nreturn render_template_string(html)"
+    ],
+    "negative": [
+      "return render_template_string('<div>{{ name }}</div>', name=escape(request.args.get('name')))",
+      "return render_template('template.html', name=request.args.get('name'))",
+      "return render_template_string('<div>Static content</div>')"
+    ]
+  }
+}

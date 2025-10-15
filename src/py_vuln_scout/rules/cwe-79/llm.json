@@ -1,0 +1,61 @@
+{
+  "id": "CWE-79.llm.001",
+  "name": "LLM-based XSS Detection",
+  "cwe_id": "CWE-79",
+  "goal": "Detect reflected/stored XSS vulnerabilities in Flask/Django/Jinja2 applications without proper sanitization",
+  "detection_prompt_template": "You are a security analyzer specialized in detecting Cross-Site Scripting (XSS) vulnerabilities (CWE-79) in Python web applications.\n\nAnalyze the following Python code from file: {{file_path}}\n\nFramework hints: {{hints}}\nKnown taint sources: {{sources}}\nKnown taint sinks: {{sinks}}\n\nCode to analyze:\n```python\n{{code}}\n```\n\nYour task:\n1. Identify if user-controlled data from sources (request parameters, form data, headers, etc.) flows into HTML rendering sinks without proper sanitization\n2. Check for use of dangerous functions like render_template_string, mark_safe, HttpResponse with HTML content\n3. Verify if proper escaping mechanisms are used (e.g., |e filter in Jinja2, escape() function)\n4. Look for string concatenation or f-strings that build HTML with user input\n\nReturn ONLY valid JSON (no additional text) with this exact structure:\n{\n  \"vulnerable\": true/false,\n  \"reason\": \"Brief explanation (max 2 sentences)\",\n  \"evidence\": [\n    {\n      \"line_start\": <line_number>,\n      \"line_end\": <line_number>,\n      \"snippet\": \"relevant code snippet\",\n      \"source\": \"taint source if identified\",\n      \"sink\": \"taint sink if identified\"\n    }\n  ],\n  \"confidence\": 0.0-1.0,\n  \"type\": \"reflected-xss\" or \"stored-xss\" or \"dom-xss\",\n  \"sanitization_absent\": true/false,\n  \"proposed_payloads\": [\"<img src=x onerror=alert(1)>\", \"<script>alert(1)</script>\"]\n}\n\nIf no vulnerability is found, set vulnerable=false and provide minimal evidence.",
+  "evidence_format": {
+    "vulnerable": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["line_start", "line_end", "snippet"],
+        "properties": {
+          "line_start": {"type": "integer"},
+          "line_end": {"type": "integer"},
+          "snippet": {"type": "string"},
+          "source": {"type": "string"},
+          "sink": {"type": "string"}
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "type": {
+      "type": "string"
+    },
+    "sanitization_absent": {
+      "type": "boolean"
+    },
+    "proposed_payloads": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "model_params": {
+    "temperature": 0.0,
+    "max_output_tokens": 512
+  },
+  "references": [
+    "https://owasp.org/www-community/attacks/xss/",
+    "https://cwe.mitre.org/data/definitions/79.html",
+    "https://flask.palletsprojects.com/en/2.3.x/security/#cross-site-scripting-xss"
+  ],
+  "examples": {
+    "positive": [
+      "from flask import Flask, request, render_template_string\n\n@app.route('/hello')\ndef hello():\n    name = request.args.get('name')\n    return render_template_string('<h1>Hello ' + name + '</h1>')"
+    ],
+    "negative": [
+      "from flask import Flask, request, render_template_string, escape\n\n@app.route('/hello')\ndef hello():\n    name = escape(request.args.get('name'))\n    return render_template_string('<h1>Hello {{ name }}</h1>', name=name)"
+    ]
+  }
+}

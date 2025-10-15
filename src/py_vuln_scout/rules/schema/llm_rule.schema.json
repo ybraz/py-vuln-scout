@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/py-vuln-scout/schemas/llm_rule.schema.json",
+  "title": "LLM Rule Schema",
+  "description": "Schema for LLM-based vulnerability detection rules",
+  "type": "object",
+  "required": ["id", "cwe_id", "goal", "detection_prompt_template", "evidence_format"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the rule",
+      "pattern": "^CWE-[0-9]+\\.(regex|llm)\\.[0-9]+$",
+      "examples": ["CWE-79.llm.001"]
+    },
+    "name": {
+      "type": "string",
+      "description": "Short name for the rule"
+    },
+    "cwe_id": {
+      "type": "string",
+      "description": "CWE identifier",
+      "pattern": "^CWE-[0-9]+$",
+      "examples": ["CWE-79"]
+    },
+    "goal": {
+      "type": "string",
+      "description": "Clear objective of this detector",
+      "examples": ["Detect reflected/stored XSS in Flask/Django/Jinja2"]
+    },
+    "detection_prompt_template": {
+      "type": "string",
+      "description": "Jinja2 template for the detection prompt. Available variables: file_path, code, ast_json, hints, sources, sinks, max_tokens"
+    },
+    "evidence_format": {
+      "type": "object",
+      "required": ["vulnerable", "reason", "evidence", "confidence"],
+      "description": "Required structure for LLM output (strict JSON format)",
+      "properties": {
+        "vulnerable": {
+          "type": "object",
+          "properties": {
+            "type": "boolean",
+            "description": "Whether a vulnerability was detected"
+          }
+        },
+        "reason": {
+          "type": "object",
+          "properties": {
+            "type": "string",
+            "description": "Short reason for the determination"
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "properties": {
+            "type": "array",
+            "description": "List of evidence objects",
+            "items": {
+              "type": "object",
+              "required": ["line_start", "line_end", "snippet"],
+              "properties": {
+                "line_start": {"type": "integer"},
+                "line_end": {"type": "integer"},
+                "snippet": {"type": "string"},
+                "source": {"type": "string"},
+                "sink": {"type": "string"}
+              }
+            }
+          }
+        },
+        "confidence": {
+          "type": "object",
+          "properties": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence level (0-1)"
+          }
+        },
+        "type": {
+          "type": "object",
+          "properties": {
+            "type": "string",
+            "description": "Vulnerability type classification"
+          }
+        },
+        "sanitization_absent": {
+          "type": "object",
+          "properties": {
+            "type": "boolean",
+            "description": "Whether sanitization is absent"
+          }
+        },
+        "proposed_payloads": {
+          "type": "object",
+          "properties": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Potential exploit payloads (short list)"
+          }
+        }
+      }
+    },
+    "model_params": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "default": 0.0
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 512
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "examples": {
+      "type": "object",
+      "properties": {
+        "positive": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "negative": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}

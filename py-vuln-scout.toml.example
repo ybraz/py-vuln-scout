@@ -1,0 +1,24 @@
+# py-vuln-scout configuration file
+# Copy this file to py-vuln-scout.toml and customize as needed
+
+[model]
+# Ollama model to use for LLM-based detection
+name = "qwen2.5-coder:7b"
+
+# Ollama API base URL
+base_url = "http://localhost:11434"
+
+# Request timeout in seconds
+timeout = 120
+
+# Enable response caching (recommended for faster repeated analyses)
+cache_enabled = true
+
+# Directory containing rule files
+rules_dir = "./src/py_vuln_scout/rules"
+
+[thresholds]
+# Minimum confidence level to report findings (0.0 - 1.0)
+# Lower values will report more potential issues (more false positives)
+# Higher values will be more conservative (fewer false positives, but may miss some issues)
+confidence_min = 0.35

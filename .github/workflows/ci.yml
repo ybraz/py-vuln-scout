@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run linters
+      run: |
+        ruff check src/ tests/
+        mypy src/
+
+    - name: Check code formatting
+      run: |
+        black --check src/ tests/
+
+    - name: Run tests
+      run: |
+        pytest --cov=py_vuln_scout --cov-report=xml --cov-report=term
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  validate-schemas:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema
+
+    - name: Validate JSON schemas
+      run: |
+        python -c "
+        import json
+        from pathlib import Path
+        schemas = [
+            'src/py_vuln_scout/rules/schema/regex_rule.schema.json',
+            'src/py_vuln_scout/rules/schema/llm_rule.schema.json',
+            'src/py_vuln_scout/output/schemas/finding.schema.json'
+        ]
+        for schema_path in schemas:
+            with open(schema_path) as f:
+                json.load(f)
+            print(f'✓ {schema_path} is valid JSON')
+        "
