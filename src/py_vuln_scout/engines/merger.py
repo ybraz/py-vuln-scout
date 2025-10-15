@@ -16,16 +16,20 @@ def merge_findings(
     Rules:
     1. If regex and llm agree (same fingerprint) → finding appears with engine: "merged"
     2. If only one engine detects, but validator confirms → finding also appears
-    3. If validator explicitly rejects → finding is discarded
-    4. If validator is disabled → high confidence findings (>=0.7) are kept
+    3. If only one engine detects and no validator confirmation → finding is DISCARDED
+    4. If validator explicitly rejects → finding is discarded
     5. If validator ran but skipped → finding is discarded
     6. validator_status and engine must clearly reflect final status: "merged", "confirmed", "rejected", "skipped"
+
+    This strict approach ensures high precision by requiring either:
+    - Consensus between engines (automatic merge), OR
+    - Explicit validator confirmation
 
     Args:
         regex_results: Findings from regex engine
         llm_results: Findings from LLM engine
         validator_results: Findings after validation (optional, None means validator didn't run)
-        merged_only: If True, only return merged/confirmed/high-confidence findings (default: True)
+        merged_only: If True, only return merged/confirmed findings (default: True)
 
     Returns:
         List of merged findings according to the rules
@@ -70,20 +74,8 @@ def merge_findings(
                 # Validator confirmed this finding
                 validated.merge_reason = "validator_confirmed"
                 merged_findings.append(validated)
-            elif validated.validator_status == ValidatorStatus.REJECTED:
-                # Discard: validator explicitly rejected
-                pass
-            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is not None:
-                # Validator ran but skipped this finding - discard
-                pass
-            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is None:
-                # Validator didn't run at all - keep high confidence findings
-                # This allows single-engine findings when validator is disabled
-                if finding.confidence >= 0.7:  # High confidence threshold
-                    merged_findings.append(finding)
-            elif validated.validator_status == ValidatorStatus.INCONCLUSIVE:
-                # Inconclusive - discard per rule 3
-                pass
+            # All other cases: discard (no consensus, no validator confirmation)
+            # This includes: REJECTED, SKIPPED, INCONCLUSIVE
 
     # Step 3: Handle LLM-only findings
     for fingerprint, findings in llm_map.items():
@@ -98,20 +90,8 @@ def merge_findings(
                 # Validator confirmed this finding
                 validated.merge_reason = "validator_confirmed"
                 merged_findings.append(validated)
-            elif validated.validator_status == ValidatorStatus.REJECTED:
-                # Discard: validator explicitly rejected
-                pass
-            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is not None:
-                # Validator ran but skipped this finding - discard
-                pass
-            elif validated.validator_status == ValidatorStatus.SKIPPED and validator_results is None:
-                # Validator didn't run at all - keep high confidence findings
-                # This allows single-engine findings when validator is disabled
-                if finding.confidence >= 0.7:  # High confidence threshold
-                    merged_findings.append(finding)
-            elif validated.validator_status == ValidatorStatus.INCONCLUSIVE:
-                # Inconclusive - discard per rule 3
-                pass
+            # All other cases: discard (no consensus, no validator confirmation)
+            # This includes: REJECTED, SKIPPED, INCONCLUSIVE
 
     return merged_findings
 

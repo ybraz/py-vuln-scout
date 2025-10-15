@@ -141,7 +141,7 @@ def test_merge_regex_only_validator_rejected(sample_regex_finding):
 
 
 def test_merge_regex_only_validator_skipped(sample_regex_finding):
-    """Test regex-only finding with validator not run (high confidence kept)."""
+    """Test regex-only finding with validator not run (should be discarded)."""
     # Validator didn't run (validator_results=None)
     sample_regex_finding.validator_status = ValidatorStatus.SKIPPED
 
@@ -152,9 +152,9 @@ def test_merge_regex_only_validator_skipped(sample_regex_finding):
         merged_only=True,
     )
 
-    # Should be kept because confidence >= 0.7 and validator didn't run
-    assert len(result) == 1
-    assert result[0].confidence == 0.7
+    # Should be discarded: no consensus, no validator confirmation
+    # This is the strict mode - only merged or validator-confirmed findings appear
+    assert len(result) == 0
 
 
 def test_merge_regex_only_validator_ran_but_skipped(sample_regex_finding):
